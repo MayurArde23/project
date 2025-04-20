@@ -1,7 +1,8 @@
+// src/pages/Signup.jsx
 import React, { useState } from 'react';
 import {
   Container, Paper, Avatar, Typography, TextField, Button,
-  Grid, Link, Box, InputAdornment, IconButton, Snackbar, Alert
+  Grid, Link, Box, Snackbar, Alert, IconButton, InputAdornment
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
@@ -9,63 +10,52 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 function Signup() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
-    fullName: '',
-    username: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
+    fullName: '', username: '', email: '', phone: '', password: '', confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'error' });
-  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSignup = (e) => {
-    e.preventDefault();
-    if (form.password !== form.confirmPassword) {
-      setSnackbar({ open: true, message: 'Passwords do not match', severity: 'error' });
-      return;
+  const handleSubmit = () => {
+    const { fullName, username, email, phone, password, confirmPassword } = form;
+    if (!fullName || !username || !email || !phone || !password || !confirmPassword) {
+      return setSnackbar({ open: true, message: "All fields required", severity: "error" });
     }
 
-    localStorage.setItem(form.username, JSON.stringify(form));
-    setSnackbar({ open: true, message: 'Signup successful!', severity: 'success' });
+    if (password !== confirmPassword) {
+      return setSnackbar({ open: true, message: "Passwords do not match", severity: "error" });
+    }
 
-    setTimeout(() => {
-      navigate('/');
-    }, 1000);
-  };
+    const users = JSON.parse(localStorage.getItem("users")) || {};
+    if (users[username]) {
+      return setSnackbar({ open: true, message: "Username already exists", severity: "error" });
+    }
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
+    users[username] = { fullName, username, email, phone, password };
+    localStorage.setItem("users", JSON.stringify(users));
+
+    setSnackbar({ open: true, message: "Signup successful! Please login.", severity: "success" });
+    setTimeout(() => navigate("/"), 1500);
   };
 
   return (
-    <Container component="main" maxWidth="xs">
+    <Container maxWidth="xs">
       <Paper elevation={6} sx={{ mt: 8, p: 4, borderRadius: 3 }}>
         <Box display="flex" flexDirection="column" alignItems="center">
-          <Avatar sx={{ bgcolor: 'secondary.main', mb: 1 }}>
+          <Avatar sx={{ bgcolor: 'primary.main', mb: 1 }}>
             <LockOutlinedIcon />
           </Avatar>
-          <Typography component="h1" variant="h5">Sign Up</Typography>
-          <Box component="form" sx={{ mt: 2 }} onSubmit={handleSignup}>
-            <TextField fullWidth required margin="normal" name="fullName" label="Full Name" value={form.fullName} onChange={handleChange} />
-            <TextField fullWidth required margin="normal" name="username" label="Username" value={form.username} onChange={handleChange} />
-            <TextField fullWidth required margin="normal" name="email" label="Email" type="email" value={form.email} onChange={handleChange} />
-            <TextField fullWidth required margin="normal" name="phone" label="Phone Number" value={form.phone} onChange={handleChange} />
-            <TextField
-              fullWidth
-              required
-              margin="normal"
-              name="password"
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              value={form.password}
+          <Typography variant="h5">Sign Up</Typography>
+          <Box sx={{ mt: 2 }}>
+            {["fullName", "username", "email", "phone"].map((field) => (
+              <TextField key={field} fullWidth margin="normal" label={field.charAt(0).toUpperCase() + field.slice(1)}
+                name={field} value={form[field]} onChange={handleChange} />
+            ))}
+            <TextField fullWidth label="Password" margin="normal"
+              type={showPassword ? 'text' : 'password'} name="password" value={form.password}
               onChange={handleChange}
               InputProps={{
                 endAdornment: (
@@ -74,45 +64,25 @@ function Signup() {
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
-                )
+                ),
               }}
             />
-            <TextField
-              fullWidth
-              required
-              margin="normal"
-              name="confirmPassword"
-              label="Confirm Password"
-              type={showConfirm ? 'text' : 'password'}
-              value={form.confirmPassword}
-              onChange={handleChange}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowConfirm(!showConfirm)} edge="end">
-                      {showConfirm ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-            />
-            <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
-              Sign Up
-            </Button>
-            <Grid container justifyContent="flex-end">
+            <TextField fullWidth label="Confirm Password" margin="normal"
+              type={showPassword ? 'text' : 'password'} name="confirmPassword"
+              value={form.confirmPassword} onChange={handleChange} />
+            <Button fullWidth variant="contained" sx={{ mt: 3 }} onClick={handleSubmit}>Sign Up</Button>
+            <Grid container justifyContent="flex-end" sx={{ mt: 2 }}>
               <Grid item>
-                <Link component="button" variant="body2" onClick={() => navigate('/')}>
-                  Already have an account? Sign in
+                <Link component="button" onClick={() => navigate('/')} variant="body2">
+                  Already have an account? Login
                 </Link>
               </Grid>
             </Grid>
           </Box>
         </Box>
       </Paper>
-      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
     </Container>
   );
